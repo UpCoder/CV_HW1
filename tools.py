@@ -127,6 +127,7 @@ def calculate_acc_error(logits, label, show=True):
                   % (key, error_dict[key], np.sum(label == key), 1-(error_dict[key]*1.0)/(np.sum(label == key) * 1.0)))
             print('error record　is ', error_dict_record[key])
     return error_dict, error_dict_record, acc, error_index, error_record
+
 if __name__ == '__main__':
     image = np.random.random([1000, 40, 40])
     patches = extract_patches_from_images(image, patch_size=5, patch_step=1)

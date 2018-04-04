@@ -69,6 +69,64 @@ def extract_patches_from_images(images, patch_size, patch_step, save_dir=None):
             gc.collect()
         patches.extend(extract_patch_from_image(image, patch_size, patch_step))
     return patches
+
+
+def split_array2array(*par):
+    '''
+    将一个或者是多个数组拆分成n个
+    :param par: N, 原来的一个或者是多个数组
+    :return:
+    '''
+    par = list(par)
+    for i in range(1, len(par)):
+        par[i] = np.array(par[i])
+    res = {}
+    len_parameters = len(par)
+    split_num = par[0]
+    pre_num = int(len(par[1]) / split_num + 1)
+    for i in range(split_num):
+        start = i*pre_num
+        end = (i+1)*pre_num
+        if end > len(par[1]):
+            end = len(par[1])
+        cur_batch_idxs = list(range(start, end))
+        for j in range(1, len_parameters):
+            print(j)
+            if (j-1) not in res.keys():
+                res[(j-1)] = []
+                res[(j-1)].append(par[j][cur_batch_idxs])
+            else:
+                res[(j-1)].append(par[j][cur_batch_idxs])
+    final_res = [res[i] for i in res.keys()]
+    return final_res
+
+
+def calculate_acc_error(logits, label, show=True):
+    error_index = []
+    error_dict = {}
+    error_dict_record = {}
+    error_count = 0
+    error_record = []
+    label = np.array(label).squeeze()
+    logits = np.array(logits).squeeze()
+    for index, logit in enumerate(logits):
+        if logit != label[index]:
+            error_count += 1
+            if label[index] in error_dict.keys():
+                error_dict[label[index]] += 1   # 该类别分类错误的个数加１
+                error_dict_record[label[index]].append(logit)   # 记录错误的结果
+            else:
+                error_dict[label[index]] = 1
+                error_dict_record[label[index]] = [logit]
+            error_index.append(index)
+            error_record.append(logit)
+    acc = (1.0 * error_count) / (1.0 * len(label))
+    if show:
+        for key in error_dict.keys():
+            print('label is %d, error number is %d, all number is %d, acc is %g'\
+                  % (key, error_dict[key], np.sum(label == key), 1-(error_dict[key]*1.0)/(np.sum(label == key) * 1.0)))
+            print('error record　is ', error_dict_record[key])
+    return error_dict, error_dict_record, acc, error_index, error_record
 if __name__ == '__main__':
     image = np.random.random([1000, 40, 40])
     patches = extract_patches_from_images(image, patch_size=5, patch_step=1)

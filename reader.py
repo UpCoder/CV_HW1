@@ -2,19 +2,54 @@ import numpy as np
 import scipy.io as scio
 from tools import show_image
 import os
+import cv2
+
+class Generator:
+    def __init__(self, images, labels, batch_size, epoch_num=-1):
+        self.images = images
+        self.batch_size = batch_size
+        self.labels = labels
+        self.epoch_num = epoch_num
+        self.start = 0
+
+    def next_batch(self):
+        if self.epoch_num == -1:
+            while True:
+                end = self.start + self.batch_size
+                if end > len(self.images):
+                    end = len(self.images)
+                image_batch = self.images[self.start: end]
+                label_batch = self.labels[self.start: end]
+                self.start += self.batch_size
+                if end == len(self.images):
+                    self.start = 0
+                yield image_batch, label_batch
+        else:
+            while True:
+                end = self.start + self.batch_size
+                if end > len(self.images):
+                    end = len(self.images)
+                image_batch = self.images[self.start: end]
+                label_batch = self.labels[self.start: end]
+                self.start += self.batch_size
+                if end == len(self.images):
+                    break
+                yield image_batch, label_batch
+            yield None, None
 
 class Reader:
-    def __init__(self, train_dir, test_path):
-        self.test_images, self.test_labels = Reader.analysis_singlefile(test_path)
-        self.train_images, self.train_labels = Reader.analysis_dir(train_dir)
+    def __init__(self, train_dir, test_path, batch_size=128, resize=None):
+        self.test_images, self.test_labels = Reader.analysis_singlefile(test_path, resize)
+        self.train_images, self.train_labels = Reader.analysis_dir(train_dir, resize)
         print('loading training image shape is ', np.shape(self.train_images), ' training label shape is ',
               np.shape(self.train_labels))
         print('loading testing image shape is ', np.shape(self.test_images), ' testing label shape is ',
               np.shape(self.test_labels))
         show_image(self.test_images[0], [100, 100])
-
+        self.train_generator = Generator(self.train_images, self.train_labels, batch_size, epoch_num=-1).next_batch()
+        self.test_generator = Generator(self.test_images, self.test_labels, batch_size, epoch_num=1).next_batch()
     @staticmethod
-    def analysis_singlefile(test_path):
+    def analysis_singlefile(test_path, resize=None):
         images = []
         labels = []
         data_mat = Reader.read_file(test_path)
@@ -28,12 +63,12 @@ class Reader:
         data_mat = scio.loadmat(file_path, struct_as_record=False, squeeze_me=True)
         return Reader._check_keys(data_mat)['affNISTdata']
     @staticmethod
-    def analysis_dir(train_dir):
+    def analysis_dir(train_dir, resize=None):
         names = os.listdir(train_dir)
         images = []
         labels = []
         for name in names:
-            image, label = Reader.analysis_singlefile(os.path.join(train_dir, name))
+            image, label = Reader.analysis_singlefile(os.path.join(train_dir, name), resize)
             images.extend(image)
             labels.extend(label)
         return images, labels

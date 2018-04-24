@@ -5,6 +5,15 @@ import os
 import gc
 
 
+def shuffle_arrs(*args):
+    arrs_len = len(args)
+    random_range = range(len(args[0]))
+    np.random.shuffle(random_range)
+    res = []
+    for i in range(arrs_len):
+        res.append(args[i][random_range])
+    return res
+
 def show_image(image_arr, resize=None):
     img = Image.fromarray(image_arr)
     if resize is not None:
@@ -128,9 +137,9 @@ def calculate_acc_error(logits, label, show=True):
             print('error record　is ', error_dict_record[key])
     return error_dict, error_dict_record, acc, error_index, error_record
 
+
 if __name__ == '__main__':
-    image = np.random.random([1000, 40, 40])
-    patches = extract_patches_from_images(image, patch_size=5, patch_step=1)
-    print(
-        np.shape(patches)
-    )
+    arr1 = np.array([0, 1, 2, 3, 4, 5])
+    [arr2, arr3] = shuffle_arrs(arr1, arr1)
+    print arr2
+    print arr3

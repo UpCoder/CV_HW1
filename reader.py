@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.io as scio
-from tools import show_image
+from tools import show_image, shuffle_arrs
 import os
 import cv2
 import keras
@@ -47,10 +47,14 @@ class Generator:
                 yield np.expand_dims(image_batch, axis=3), keras.utils.to_categorical(label_batch, 10)
             yield None, None
 
+
 class Reader:
     def __init__(self, train_dir, test_path, batch_size=128, resize=None):
         self.test_images, self.test_labels = Reader.analysis_singlefile(test_path)
         self.train_images, self.train_labels = Reader.analysis_dir(train_dir)
+
+        self.train_images, self.train_labels = shuffle_arrs(self.train_images, self.train_labels)
+        self.test_images, self.test_labels = shuffle_arrs(self.test_images, self.test_labels)
         print('loading training image shape is ', np.shape(self.train_images), ' training label shape is ',
               np.shape(self.train_labels))
         print('loading testing image shape is ', np.shape(self.test_images), ' testing label shape is ',
@@ -60,6 +64,7 @@ class Reader:
                                          resize=resize).next_batch()
         self.test_generator = Generator(self.test_images, self.test_labels, batch_size, epoch_num=1,
                                         resize=resize).next_batch()
+
     @staticmethod
     def analysis_singlefile(test_path):
         images = []
@@ -69,11 +74,13 @@ class Reader:
         for i in range(0, img_len):
             images.append(np.reshape(data_mat['image'][:, i], [40, 40]))
             labels.append(data_mat['label_int'][i])
-        return images, labels
+        return np.asarray(images), np.asarray(labels)
+
     @staticmethod
     def read_file(file_path):
         data_mat = scio.loadmat(file_path, struct_as_record=False, squeeze_me=True)
         return Reader._check_keys(data_mat)['affNISTdata']
+
     @staticmethod
     def analysis_dir(train_dir):
         names = os.listdir(train_dir)
@@ -83,7 +90,8 @@ class Reader:
             image, label = Reader.analysis_singlefile(os.path.join(train_dir, name))
             images.extend(image)
             labels.extend(label)
-        return images, labels
+        return np.asarray(images), np.asarray(labels)
+
     @staticmethod
     def _check_keys(dict):
         '''
@@ -108,7 +116,8 @@ class Reader:
             else:
                 dict[strg] = elem
         return dict
-    
+
+
 if __name__ == '__main__':
     data_dict = Reader.read_file('/home/give/homework/CV/dataset/affNIST/test.mat')
     print(data_dict.keys())

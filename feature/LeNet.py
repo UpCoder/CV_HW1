@@ -1,3 +1,4 @@
+# -*- coding=utf-8 -*-
 import tensorflow as tf
 from keras.layers import Conv2D, Flatten, MaxPooling2D, Dense, Input
 from reader import Reader
@@ -25,15 +26,17 @@ def LeNetModel(input_tensor):
 
 def train():
     reader = Reader(
-        '/home/give/homework/CV/dataset/affNIST/training_and_validation_batches',
-        '/home/give/homework/CV/dataset/affNIST/test.mat'
+        '/home/ld/dataset/affNIST/training_and_validation_batches',
+        '/home/ld/dataset/affNIST/test.mat'
     )
     input_tensor = Input((40, 40, 1))
     predicted = LeNetModel(input_tensor)
     model = Model(inputs=input_tensor, outputs=predicted)
     model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    checkpoint = ModelCheckpoint(filepath='/home/give/homework/CV/hw1/feature/LeNet/checkpoint-{epoch:02d}-{val_loss:.2f}.hdf5')
-    model.fit(np.expand_dims(reader.train_images, axis=3), keras.utils.to_categorical(reader.train_labels, 10), batch_size=128, epochs=10,
+    checkpoint = ModelCheckpoint(
+        filepath='/home/ld/remote_project/CV_HW1/feature/LeNet/checkpoint-{epoch:02d}-{val_loss:.2f}.hdf5')
+    model.fit(np.expand_dims(reader.train_images, axis=3), keras.utils.to_categorical(reader.train_labels, 10),
+              batch_size=128, epochs=10,
               validation_split=0.3, callbacks=[checkpoint])
 
 
@@ -41,19 +44,20 @@ def test():
     input_tensor = Input((40, 40, 1))
     predicted = LeNetModel(input_tensor)
     model = Model(inputs=input_tensor, outputs=predicted)
-    model.load_weights('/home/give/homework/CV/hw1/feature/LeNet/checkpoint-10-2.15.hdf5')
+    model.load_weights('/home/ld/remote_project/CV_HW1/feature/LeNet/checkpoint-10-2.15.hdf5')
     reader = Reader(
-        '/home/give/homework/CV/dataset/affNIST/training_and_validation_batches',
-        '/home/give/homework/CV/dataset/affNIST/test.mat'
+        '/home/ld/dataset/affNIST/training_and_validation_batches',
+        '/home/ld/dataset/affNIST/test.mat'
     )
     model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['accuracy'])
-    score = model.evaluate(np.expand_dims(reader.test_images, axis=3), keras.utils.to_categorical(reader.test_labels, 10), verbose=0)
+    score = model.evaluate(np.expand_dims(reader.test_images, axis=3),
+                           keras.utils.to_categorical(reader.test_labels, 10), verbose=0)
     print('Total Test Accuracy is ', score[1])
     predict_res = model.predict(np.expand_dims(reader.test_images, axis=3))
     calculate_acc_error(np.argmax(predict_res, axis=1), reader.test_labels)
 
 if __name__ == '__main__':
     # 训练模型
-    # train()
+    train()
     # 测试模型
-    test()
+    # test()
